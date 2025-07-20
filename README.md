@@ -4,6 +4,9 @@
 
 ## Microservices implemented (so far):
 
+### Basic frontend:
+#### Server-side rendered basic template to test the microservices
+
 ### Broker:
 #### Point of entry and communication
 
