@@ -1,0 +1,6 @@
+github.com/danilobml/go-webtoolkit v0.0.0-20250720130111-78d613fe1fd0 h1:hLjs91nembW1cN9sUx0lz84xNZWeCLpj/kSijnQ5YGs=
+github.com/danilobml/go-webtoolkit v0.0.0-20250720130111-78d613fe1fd0/go.mod h1:KFDYdNy+moNSJknRPtQs0Y7nxt58osGj1xnIN2FEj00=
+github.com/go-chi/chi/v5 v5.2.2 h1:CMwsvRVTbXVytCk1Wd72Zy1LAsAh9GxMmSNWLHCG618=
+github.com/go-chi/chi/v5 v5.2.2/go.mod h1:L2yAIGWB3H+phAw1NxKwWM+7eUH/lU8pOMm5hHcoops=
+github.com/go-chi/cors v1.2.2 h1:Jmey33TE+b+rB7fT8MUy1u0I4L+NARQlK6LhzKPSyQE=
+github.com/go-chi/cors v1.2.2/go.mod h1:sSbTewc+6wYHBBCW7ytsFSn836hqM7JxpglAy2Vzc58=
