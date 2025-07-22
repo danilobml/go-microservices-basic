@@ -29,3 +29,9 @@ go.work.sum
 .vscode/
 
 db-data
+
+# binaries
+frontApp
+brokerApp
+authApp
+loggerApp

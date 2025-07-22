@@ -15,11 +15,17 @@ var tools goweb.Tools
 type RequestPayload struct {
 	Action string      `json:"action"`
 	Auth   AuthPayload `json:"auth,omitempty"`
+	Log    LogPayload  `json:"log,omitempty"`
 }
 
 type AuthPayload struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
+}
+
+type LogPayload struct {
+	Name string `json:"name"`
+	Data string `json:"data"`
 }
 
 func (app *Config) Broker(w http.ResponseWriter, r *http.Request) {
@@ -44,6 +50,8 @@ func (app *Config) handleSubmission(w http.ResponseWriter, r *http.Request) {
 	switch requestPayload.Action {
 	case "auth":
 		app.authenticate(w, requestPayload.Auth)
+	case "log":
+		app.logItem(w, requestPayload.Log)
 	default:
 		tools.ErrorJSON(w, errors.New("invalid action"), http.StatusBadRequest)
 	}
@@ -95,4 +103,42 @@ func (app *Config) authenticate(w http.ResponseWriter, auth AuthPayload) {
 	}
 
 	tools.WriteJSON(w, http.StatusOK, payload)
+}
+
+func (app *Config) logItem(w http.ResponseWriter, log LogPayload) {
+	jsonData, _ := json.Marshal(log)
+
+	request, err := http.NewRequest("POST", "http://logger-service/log", bytes.NewBuffer(jsonData))
+	if err != nil {
+		tools.ErrorJSON(w, errors.New("failed creating request to log-service"), http.StatusInternalServerError)
+		return
+	}
+	request.Header.Set("Content-Type", "application-json")
+
+	client := &http.Client{}
+	response, err := client.Do(request)
+	if err != nil {
+		tools.ErrorJSON(w, errors.New("response from log-service failed"), http.StatusInternalServerError)
+		return
+	}
+	defer response.Body.Close()
+
+	var jsonFromService goweb.JsonResponse
+	err = json.NewDecoder(response.Body).Decode(&jsonFromService)
+	if err != nil {
+		tools.ErrorJSON(w, errors.New("failed parsing response from log service"), http.StatusInternalServerError)
+		return
+	}
+
+	if jsonFromService.Error {
+		tools.ErrorJSON(w, errors.New("failed logging: "+jsonFromService.Message), http.StatusUnauthorized)
+		return
+	}
+
+	payload := goweb.JsonResponse{
+		Error:   false,
+		Message: "logged entry succesfully",
+	}
+
+	tools.WriteJSON(w, http.StatusCreated, payload)
 }

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -59,6 +61,13 @@ func (app *Config) authenticate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	err = app.logRequest("auth", fmt.Sprintf("Logged in user: %s", user.Email))
+	if err != nil {
+		log.Println(err)
+		tools.ErrorJSON(w, errors.New("log service error"), http.StatusUnauthorized)
+		return
+	}
+
 	payload := goweb.JsonResponse{
 		Error:   false,
 		Message: fmt.Sprintf("Logged user %s in", user.Email),
@@ -66,4 +75,31 @@ func (app *Config) authenticate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tools.WriteJSON(w, http.StatusOK, payload)
+}
+
+func (app *Config) logRequest(name, data string) error {
+	var entry struct {
+		Name string `json:"name"`
+		Data string `json:"data"`
+	}
+
+	entry.Name = name
+	entry.Data = data
+
+	jsonData, _ := json.Marshal(entry)
+
+	loggerUrl := "http://logger-service/log"
+
+	request, err := http.NewRequest("POST", loggerUrl, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return err
+	}
+
+	client := &http.Client{}
+	_, err = client.Do(request)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
