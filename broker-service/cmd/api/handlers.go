@@ -16,6 +16,7 @@ type RequestPayload struct {
 	Action string      `json:"action"`
 	Auth   AuthPayload `json:"auth,omitempty"`
 	Log    LogPayload  `json:"log,omitempty"`
+	Mail   MailPayload `json:"mail,omitempty"`
 }
 
 type AuthPayload struct {
@@ -26,6 +27,13 @@ type AuthPayload struct {
 type LogPayload struct {
 	Name string `json:"name"`
 	Data string `json:"data"`
+}
+
+type MailPayload struct {
+	From    string `json:"from"`
+	To      string `json:"to"`
+	Subject string `json:"subject"`
+	Message string `json:"message"`
 }
 
 func (app *Config) Broker(w http.ResponseWriter, r *http.Request) {
@@ -52,6 +60,8 @@ func (app *Config) handleSubmission(w http.ResponseWriter, r *http.Request) {
 		app.authenticate(w, requestPayload.Auth)
 	case "log":
 		app.logItem(w, requestPayload.Log)
+	case "mail":
+		app.sendMail(w, requestPayload.Mail)
 	default:
 		tools.ErrorJSON(w, errors.New("invalid action"), http.StatusBadRequest)
 	}
@@ -142,3 +152,43 @@ func (app *Config) logItem(w http.ResponseWriter, log LogPayload) {
 
 	tools.WriteJSON(w, http.StatusCreated, payload)
 }
+
+
+func (app *Config) sendMail(w http.ResponseWriter, mail MailPayload) {
+	jsonData, _ := json.Marshal(mail)
+
+	request, err := http.NewRequest("POST", "http://mail-service/send", bytes.NewBuffer(jsonData))
+	if err != nil {
+		tools.ErrorJSON(w, errors.New("failed creating request to mail-service"), http.StatusInternalServerError)
+		return
+	}
+	request.Header.Set("Content-Type", "application-json")
+
+	client := &http.Client{}
+	response, err := client.Do(request)
+	if err != nil {
+		tools.ErrorJSON(w, errors.New("response from mail-service failed"), http.StatusInternalServerError)
+		return
+	}
+	defer response.Body.Close()
+
+	var jsonFromService goweb.JsonResponse
+	err = json.NewDecoder(response.Body).Decode(&jsonFromService)
+	if err != nil {
+		tools.ErrorJSON(w, errors.New("failed parsing response from mail-service"), http.StatusInternalServerError)
+		return
+	}
+
+	if jsonFromService.Error {
+		tools.ErrorJSON(w, errors.New("failed sending mail: "+jsonFromService.Message), http.StatusUnauthorized)
+		return
+	}
+
+	payload := goweb.JsonResponse{
+		Error:   false,
+		Message: "mail sent succesfully",
+	}
+
+	tools.WriteJSON(w, http.StatusCreated, payload)
+}
+
