@@ -2,6 +2,14 @@
 
 ## This is a project to practice creating Microservices using Go
 
+## Tooling:
+- go
+- chi
+- Docker
+- RabbitMq
+- go-simple-mail
+- premailer
+
 ## Microservices implemented (so far):
 
 ### Basic frontend:
@@ -12,3 +20,9 @@
 
 ### Authentication:
 #### Username and password + auth
+
+### Mail:
+#### Sending Emails
+
+### Listener:
+#### Using RabbitMQ to send messages between services
