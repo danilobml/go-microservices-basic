@@ -9,6 +9,8 @@
 - RabbitMq
 - go-simple-mail
 - premailer
+- PostgreSQL
+- MongoDb
 
 ## Microservices implemented (so far):
 
