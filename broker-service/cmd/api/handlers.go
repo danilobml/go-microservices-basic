@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"net/rpc"
 
 	"github.com/danilobml/broker/cmd/api/event"
 	goweb "github.com/danilobml/go-webtoolkit"
@@ -60,8 +61,12 @@ func (app *Config) handleSubmission(w http.ResponseWriter, r *http.Request) {
 	case "auth":
 		app.authenticate(w, requestPayload.Auth)
 	case "log":
+		// // REST:
 		// app.logItem(w, requestPayload.Log)
-		app.logEventViaRabbit(w, requestPayload.Log)
+		// // RabbitMQ
+		// app.logEventViaRabbit(w, requestPayload.Log)
+		// RPC:
+		app.logEventViaRpc(w, requestPayload.Log)
 	case "mail":
 		app.sendMail(w, requestPayload.Mail)
 	default:
@@ -155,7 +160,6 @@ func (app *Config) logItem(w http.ResponseWriter, log LogPayload) {
 	tools.WriteJSON(w, http.StatusCreated, payload)
 }
 
-
 func (app *Config) sendMail(w http.ResponseWriter, mail MailPayload) {
 	jsonData, _ := json.Marshal(mail)
 
@@ -228,4 +232,34 @@ func (app *Config) pushToQueue(name, msg string) error {
 	}
 
 	return nil
+}
+
+type RPCPayload struct {
+	Name string
+	Data string
+}
+
+func (app *Config) logEventViaRpc(w http.ResponseWriter, l LogPayload) {
+	client, err := rpc.Dial("tcp", "logger-service:5001")
+	if err != nil {
+		tools.ErrorJSON(w, err, http.StatusInternalServerError)
+	}
+
+	rpcPayload := RPCPayload{
+		Name: l.Name,
+		Data: l.Data,
+	}
+
+	var result string
+	err = client.Call("RPCServer.LogInfo", rpcPayload, &result)
+	if err != nil {
+		tools.ErrorJSON(w, err, http.StatusInternalServerError)
+	}
+
+	payload := goweb.JsonResponse{
+		Error:   false,
+		Message: result,
+	}
+
+	tools.WriteJSON(w, http.StatusAccepted, payload)
 }

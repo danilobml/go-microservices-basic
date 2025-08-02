@@ -54,7 +54,3 @@ func (app *Config) GetAllEntries(w http.ResponseWriter, r *http.Request) {
 
 	tools.WriteJSON(w, http.StatusOK, payload)
 }
-
-func (app *Config) GetOneEntry(w http.ResponseWriter, r *http.Request) {
-
-}
