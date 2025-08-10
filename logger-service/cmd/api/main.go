@@ -18,6 +18,7 @@ const (
 	webPort  = "80"
 	mongoUrl = "mongodb://mongo:27017"
 	rpcPort  = "5001"
+	gRpcPort = "50001"
 )
 
 var client *mongo.Client
@@ -52,6 +53,8 @@ func main() {
 		log.Panic("rpc server registration failed")
 	}
 	go app.rpcListen()
+
+	go app.gRPCListen()
 
 	app.serve()
 }

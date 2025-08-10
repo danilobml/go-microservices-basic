@@ -15,6 +15,9 @@
                 <a id="logBtn" class="btn btn-primary" href="javascript:void(0);">
                     Test Logging
                 </a>
+                <a id="logGrpcBtn" class="btn btn-primary" href="javascript:void(0);">
+                    Test Log gRPC
+                </a>
                 <a id="mailBtn" class="btn btn-primary" href="javascript:void(0);">
                     Test Sending Email
                 </a>    
@@ -46,6 +49,7 @@
         const authBrokerBtn = document.getElementById("authBrokerBtn")
         const logBtn = document.getElementById("logBtn")
         const mailBtn = document.getElementById("mailBtn")
+        const logGrpcBtn = document.getElementById("logGrpcBtn")
         const output = document.getElementById("output")
         const sent = document.getElementById("payload")
         const received = document.getElementById("received")
@@ -173,9 +177,41 @@
                 })
         }
 
+        function testLogGrpc() {
+            fetch("http://localhost:8080/log-grpc", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(
+                    {
+                        action: "log",
+                        log: {
+                            name: "test log grpc",
+                            data: "test data Grpc"
+                        }
+                    }
+                )
+            })
+                .then(res => res.json())
+                .then(data => {
+                    sent.innerHTML = JSON.stringify(log);
+                    received.innerHTML = JSON.stringify(data, undefined, 4);
+                    if (data.error) {
+                        console.error(data.error)
+                    } else {
+                        output.innerHTML += `<br><strong>Response from Log service</strong>: ${data.message}` 
+                    }
+                })
+                .catch(err => {
+                    output.innerHTML += `<br><br>Error : ${err}`
+                })
+        }
+
         brokerBtn.addEventListener("click", testBroker)
         authBrokerBtn.addEventListener("click", testAuth)
         logBtn.addEventListener("click", testLog)
         mailBtn.addEventListener("click", testMail)
+        logGrpcBtn.addEventListener("click", testLogGrpc)
     </script>
 {{end}}

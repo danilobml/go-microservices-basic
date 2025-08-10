@@ -2,14 +2,19 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"log"
 	"net/http"
 	"net/rpc"
+	"time"
 
 	"github.com/danilobml/broker/cmd/api/event"
+	"github.com/danilobml/broker/logs"
 	goweb "github.com/danilobml/go-webtoolkit"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 var tools goweb.Tools
@@ -259,6 +264,48 @@ func (app *Config) logEventViaRpc(w http.ResponseWriter, l LogPayload) {
 	payload := goweb.JsonResponse{
 		Error:   false,
 		Message: result,
+	}
+
+	tools.WriteJSON(w, http.StatusAccepted, payload)
+}
+
+func (app *Config) logEventViaGrpc(w http.ResponseWriter, r *http.Request) {
+	var requestPayload RequestPayload
+	err := tools.ReadJSON(w, r, &requestPayload)
+	if err != nil {
+		tools.ErrorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	logEntry := logs.Log{
+		Name: requestPayload.Log.Name,
+		Data: requestPayload.Log.Data,
+	}
+
+	log.Printf("Broker sending gRPC log: name=%q, data=%q", logEntry.Name, logEntry.Data)
+
+	logRequest := logs.LogRequest{LogEntry: &logEntry}
+
+	conn, err := grpc.Dial("logger-service:50001", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		tools.ErrorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+	defer conn.Close()
+
+	c := logs.NewLoggerServiceClient(conn)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	result, err := c.WriteLog(ctx, &logRequest)
+	if err != nil {
+		tools.ErrorJSON(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	payload := goweb.JsonResponse{
+		Error:   false,
+		Message: result.GetResult(),
 	}
 
 	tools.WriteJSON(w, http.StatusAccepted, payload)
